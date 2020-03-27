@@ -93,3 +93,70 @@ print('It takes %d days with NO regulations to infect 1 million people.' % contr
 print('It takes %d days with moderate regulations to infect 1 million people.' % moderate_days)
 print('It takes %d days with significant regulations to infect 1 million people.' % significant_days)
 print("Elapsed (after compilation) = %s" % (end2 - start2))
+
+
+"""
+Example 2 but written to better suit nopython mode
+Currently not functional
+"""
+
+from numba import jit
+import numpy as np
+import time
+
+
+pop = int(1e6)
+
+@jit
+def infect_time(connections):
+    # this function calculates the time it takes to infect a population of ppl with
+    # no behavioral control measures in place
+
+    # infected = [ child, adult, senior]
+    # an adult is most likely to be infected first
+    infected = np.zeros((1,3))
+    infected[0][1] = 1
+    total = np.sum(infected)
+
+    #loop everyday until 100% infected
+    day = 0
+    while total <= pop: 
+        infected_1 = infected.copy()
+        for item in infected_1[0]:
+            new_infected = np.multiply(infected[0][item], connections[item])
+            infected[0][0] += new_infected[0]
+            infected[0][1] += new_infected[1]
+            infected[0][2] += new_infected[2]
+        total =(np.sum(infected))
+        day += 1
+    return day, total
+
+
+# Connections that a person will have each day [child, adult, senior]
+# [ [child connections[child, adult, senior]], [adult connections], [senior connections]]
+control = np.array([[36, 9, 2], [4, 16, 2], [3, 7, 9]])
+moderate = np.array([[8, 9, 2],  [4, 10, 2], [3, 7, 5]])
+significant = np.array([ [0, 2, 0], [1, 1, 0],  [0, 0, 1]])
+
+# Compilation time
+start1 = time.time()
+[control_days, control_totals] = infect_time(control)
+[moderate_days, moderate_totals] = infect_time(moderate)
+[significant_days, significant_totals] = infect_time(significant)
+end1 = time.time()
+print('It takes %d days with NO regulations to infect 1 million people.' % control_days)
+print('It takes %d days with moderate regulations to infect 1 million people.' % moderate_days)
+print('It takes %d days with significant regulations to infect 1 million people.' % significant_days)
+print("Elapsed (with compilation) = %s" % (end1 - start1))
+
+# Executing from cache
+start2 = time.time()
+[control_days, control_totals] = infect_time(control)
+[moderate_days, moderate_totals] = infect_time(moderate)
+[significant_days, significant_totals] = infect_time(significant)
+end2 = time.time()
+print('It takes %d days with NO regulations to infect 1 million people.' % control_days)
+print('It takes %d days with moderate regulations to infect 1 million people.' % moderate_days)
+print('It takes %d days with significant regulations to infect 1 million people.' % significant_days)
+print("Elapsed (after compilation) = %s" % (end2 - start2))
+
